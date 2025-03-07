@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Type'n'slash</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --purple: #9C6CE9;
+            --background: #1A1A1A;
+            --text: #FFFFFF;
+            --border: #333333;
+            --success: #4CAF50;
+            --error: #f44336;
+        }
+
+        body {
+            width: 320px;
+            background: var(--background);
+            color: var(--text);
+            font-family: 'IBM Plex Mono', monospace;
+            margin: 0;
+            padding: 24px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .title-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .title-section h1 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .version {
+            padding: 4px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 99px;
+            font-size: 14px;
+        }
+
+        .settings-button {
+            background: var(--purple);
+            border: none;
+            border-radius: 4px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text);
+            padding: 0;
+        }
+
+        .settings-button:hover {
+            opacity: 0.9;
+        }
+
+        .commands-section {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .commands-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+            font-size: 14px;
+            color: var(--text);
+        }
+
+        .command-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .command-button {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--purple);
+            padding: 8px 12px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .command-button:hover {
+            background: rgba(156, 108, 233, 0.1);
+            border-color: var(--purple);
+        }
+
+        .command-key {
+            position: absolute;
+            top: -8px;
+            left: -8px;
+            background: var(--purple);
+            color: var(--text);
+            border-radius: 99px;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 2px 6px;
+        }
+
+        .no-commands {
+            text-align: center;
+            padding: 16px;
+            color: var(--text);
+            opacity: 0.7;
+            font-size: 14px;
+        }
+
+        .icon {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title-section">
+            <h1>Type'n'Slash</h1>
+            <div class="version">Version 1.0</div>
+        </div>
+        <button class="settings-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-cog"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"/><path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M12 2v2"/><path d="M12 22v-2"/><path d="m17 20.66-1-1.73"/><path d="M11 10.27 7 3.34"/><path d="m20.66 17-1.73-1"/><path d="m3.34 7 1.73 1"/><path d="M14 12h8"/><path d="M2 12h2"/><path d="m20.66 7-1.73 1"/><path d="m3.34 17 1.73-1"/><path d="m17 3.34-1 1.73"/><path d="m11 13.73-4 6.93"/></svg>
+        </button>
+    </div>
+
+    <div class="commands-section">
+        <div class="commands-header">
+            <span>// Commands</span>
+        </div>
+        <div id="command-list" class="command-grid">
+            <!-- Commands will be loaded dynamically -->
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html> 

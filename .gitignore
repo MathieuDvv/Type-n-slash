@@ -1,0 +1,4 @@
+venv/
+mockups/
+.pycache/
+.DS_Store

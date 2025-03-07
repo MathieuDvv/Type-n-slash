@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Type'n'Slash Options</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --purple: #9C6CE9;
+            --background: #1A1A1A;
+            --text: #FFFFFF;
+            --border: #333333;
+            --success: #4CAF50;
+            --error: #f44336;
+        }
+
+        body {
+            background: var(--background);
+            color: var(--text);
+            font-family: 'IBM Plex Mono', monospace;
+            margin: 0;
+            padding: 32px;
+            min-width: 800px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .title-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .title-section h1 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .version {
+            padding: 4px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 99px;
+            font-size: 14px;
+        }
+
+        .activation-key {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .key-label {
+            background: var(--purple);
+            padding: 4px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .activation-key input {
+            width: 60px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 4px 12px;
+            color: var(--text);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 14px;
+        }
+
+        .commands-section {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .commands-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .commands-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--text);
+        }
+
+        .commands-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            padding: 4px 12px;
+            background: var(--purple);
+            color: var(--text);
+            border: none;
+            border-radius: 99px;
+            cursor: pointer;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button.icon-button {
+            background: transparent;
+            border: 1px solid var(--border);
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        .command-item {
+            display: grid;
+            grid-template-columns: auto auto auto auto 1fr auto;
+            gap: 32px;
+            margin-bottom: 16px;
+            align-items: center;
+            background: #222222;
+            padding: 12px 16px;
+            border-radius: 16px;
+            position: relative;
+        }
+
+        .command-key {
+            background: var(--purple);
+            padding: 4px 12px;
+            border-radius: 99px;
+            font-size: 14px;
+            font-weight: 500;
+            color: white;
+        }
+
+        .command-name-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            max-width: 150px;
+        }
+
+        .command-name {
+            background: #333333;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: white;
+            width: 100%;
+            height: 36px;
+            box-sizing: border-box;
+        }
+
+        .add-alias-button {
+            position: absolute;
+            right: -24px;
+            background: transparent;
+            border: none;
+            color: var(--purple);
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .add-alias-button:hover {
+            opacity: 1;
+        }
+        
+        .command-plus {
+            display: none; /* Hide the second plus button */
+        }
+
+        .command-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text);
+            opacity: 0.5;
+            margin: 0 4px;
+        }
+
+        .action-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .action-button {
+            background: var(--purple);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            width: 180px;
+            justify-content: space-between;
+            height: 36px;
+            box-sizing: border-box;
+        }
+
+        .action-button .dropdown {
+            margin-left: 4px;
+            opacity: 0.7;
+        }
+
+        .action-value {
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 14px;
+            width: 100%;
+            height: 36px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .select-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .select-wrapper button {
+            background: #333333;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            color: white;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 14px;
+            width: 100%;
+            height: 36px;
+            box-sizing: border-box;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .delete-command {
+            background: transparent;
+            border: none;
+            color: #666666;
+            padding: 4px;
+            font-size: 14px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 8px;
+        }
+
+        .delete-command:hover {
+            color: var(--error);
+        }
+
+        .action-dropdown, .select-dropdown {
+            background: var(--purple) !important;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 0;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .action-option, .select-option {
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+            color: white;
+        }
+
+        .action-option:hover, .select-option:hover {
+            background: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        input, select {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 14px;
+        }
+
+        select {
+            padding-right: 32px;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='white' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+        }
+
+        .command-value {
+            flex: 1;
+        }
+
+        .command-value input {
+            width: 100%;
+        }
+
+        #json-editor {
+            width: 100%;
+            height: 400px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 14px;
+            resize: vertical;
+            margin-top: 24px;
+        }
+
+        #json-editor.hidden,
+        #visual-editor.hidden {
+            display: none;
+        }
+
+        .status {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: 500;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        .status.success {
+            background: var(--success);
+            color: white;
+        }
+
+        .status.error {
+            background: var(--error);
+            color: white;
+        }
+        
+        .status.info {
+            background: var(--purple);
+            color: white;
+        }
+
+        .status:not([style*="display: none"]) {
+            opacity: 1;
+        }
+
+        #import-file {
+            display: none;
+        }
+
+        /* Alias system styles */
+        .alias-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .alias-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .alias-input {
+            background: #333333;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: white;
+            height: 36px;
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        .remove-alias {
+            background: transparent;
+            border: none;
+            color: #666666;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .remove-alias:hover {
+            color: var(--error);
+        }
+
+        .alias-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            background: #222222;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            z-index: 100;
+            width: 200px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .alias-dropdown-title {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: white;
+        }
+
+        .add-new-alias {
+            background: transparent;
+            border: 1px solid var(--purple);
+            color: var(--purple);
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 8px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .add-new-alias:hover {
+            background: rgba(156, 108, 233, 0.1);
+        }
+
+        .add-new-alias:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title-section">
+            <h1>Type'n'Slash</h1>
+            <div class="version">Version 1.0</div>
+        </div>
+        <div class="activation-key">
+            <div class="key-label">Key</div>
+            <input type="text" id="activation-key" value="/" maxlength="1" />
+        </div>
+    </div>
+
+    <div class="commands-section">
+        <div class="commands-header">
+            <div class="commands-title">
+                <span>// Commands</span>
+            </div>
+            <div class="commands-actions">
+                <button id="add-command">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M8 3V13M3 8H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </button>
+                <button id="save" class="icon-button">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M3 8L7 12L13 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <button class="icon-button" id="import">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M3 14H13M8 3V11M8 11L5 8M8 11L11 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <button class="icon-button" id="export">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M3 14H13M8 11V3M8 3L5 6M8 3L11 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <button class="icon-button" id="editor-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pen-line"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg>
+                </button>
+            </div>
+        </div>
+        <div id="command-list"></div>
+    </div>
+
+    <textarea id="json-editor" class="hidden" spellcheck="false" placeholder="Edit commands in JSON format..."></textarea>
+    <input type="file" id="import-file" accept=".json" />
+    <div id="status" class="status"></div>
+
+    <script src="options.js"></script>
+    <script src="debug.js"></script>
+</body>
+</html> 
