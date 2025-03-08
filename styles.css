@@ -57,16 +57,20 @@
 .tns-command-pill {
     display: inline-flex;
     align-items: center;
-    background-color: #9C6CE9;
+    background: linear-gradient(135deg, #9C6CE9, #7C4CD9);
     border-radius: 16px;
     padding: 4px 12px;
     margin-right: 8px;
     font-family: 'Courier New', monospace;
     font-size: 14px;
-    color: #ffffff; /* Neon green */
+    color: #ffffff;
     font-weight: 500;
     white-space: nowrap;
     height: fit-content;
+    box-shadow: 0 2px 8px rgba(156, 108, 233, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
 }
 
 /* Dark mode support */
@@ -94,5 +98,11 @@
 
     .tns-description {
         color: #b0b0b0;
+    }
+    
+    .tns-command-pill {
+        background: linear-gradient(135deg, #8C5CD9, #6C3CC9);
+        box-shadow: 0 2px 8px rgba(108, 60, 201, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.1);
     }
 } 

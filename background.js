@@ -13,7 +13,8 @@ const commandHandlers = {
                 google: 'https://www.google.com',
                 duckduckgo: 'https://duckduckgo.com',
                 bing: 'https://www.bing.com',
-                brave: 'https://search.brave.com'
+                brave: 'https://search.brave.com',
+                wikipedia: 'https://www.wikipedia.org'
             };
             await chrome.tabs.create({ url: homepages[searchEngine] || homepages.google });
             return;
@@ -24,7 +25,8 @@ const commandHandlers = {
             google: `https://www.google.com/search?q=${encodeURIComponent(query)}`,
             duckduckgo: `https://duckduckgo.com/?q=${encodeURIComponent(query)}`,
             bing: `https://www.bing.com/search?q=${encodeURIComponent(query)}`,
-            brave: `https://search.brave.com/search?q=${encodeURIComponent(query)}`
+            brave: `https://search.brave.com/search?q=${encodeURIComponent(query)}`,
+            wikipedia: `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(query)}`
         };
 
         await chrome.tabs.create({ url: searchUrls[searchEngine] || searchUrls.google });
@@ -173,6 +175,28 @@ const commandHandlers = {
         if (!tab?.id) return;
         
         await chrome.tabs.reload(tab.id);
+    },
+    
+    poly: async (commands, userParam) => {
+        if (!commands || !Array.isArray(commands) || commands.length === 0) return;
+        
+        // Execute each command in sequence
+        for (const cmd of commands) {
+            if (!cmd.action || !commandHandlers[cmd.action]) continue;
+            
+            try {
+                // If this is a search command and we have a user parameter, use it as the search query
+                if (cmd.action === 'search' && userParam) {
+                    const searchEngine = cmd.args?.[0] || 'google';
+                    await commandHandlers.search(searchEngine, userParam);
+                } else {
+                    // Execute the command with its original arguments
+                    await commandHandlers[cmd.action](...(cmd.args || []));
+                }
+            } catch (error) {
+                console.error(`Error executing poly command ${cmd.action}:`, error);
+            }
+        }
     }
 };
 

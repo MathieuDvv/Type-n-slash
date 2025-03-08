@@ -490,6 +490,36 @@ class TypeNSlash {
                     });
                 }
             }
+            // For poly commands, parse the JSON array of commands
+            else if (command.action === 'poly') {
+                let polyCommands = [];
+                
+                try {
+                    // Parse the commands from the first argument
+                    if (command.args && command.args[0]) {
+                        polyCommands = JSON.parse(command.args[0]);
+                    }
+                    
+                    if (!Array.isArray(polyCommands) || polyCommands.length === 0) {
+                        console.error('Invalid poly command configuration');
+                        return;
+                    }
+                    
+                    // Get user parameter if any
+                    const userParam = args.length > 0 ? args.join(' ') : null;
+                    
+                    // Execute the poly command
+                    await chrome.runtime.sendMessage({
+                        type: 'EXECUTE_COMMAND',
+                        command: {
+                            action: 'poly',
+                            args: [polyCommands, userParam]
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error parsing poly commands:', error);
+                }
+            }
             else {
                 await chrome.runtime.sendMessage({
                     type: 'EXECUTE_COMMAND',

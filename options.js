@@ -25,6 +25,11 @@ const DEFAULT_COMMANDS = {
         args: ['google'],
         description: 'Search on Google'
     },
+    'wiki': {
+        action: 'search',
+        args: ['wikipedia'],
+        description: 'Search on Wikipedia'
+    },
     'dev': {
         action: 'openDevTools',
         args: [],
@@ -34,6 +39,11 @@ const DEFAULT_COMMANDS = {
         action: 'reloadPage',
         args: [],
         description: 'Reload the current page'
+    },
+    'multi': {
+        action: 'poly',
+        args: ['[{"action":"openTab","args":["github.com/"]},{"action":"search","args":["google"]}]'],
+        description: 'Open GitHub and search Google'
     },
     'exec': {
         action: 'executeCommand',
@@ -52,7 +62,7 @@ const COMMAND_TYPES = {
     },
     'search': {
         type: 'select',
-        options: ['google', 'youtube', 'duckduckgo', 'bing', 'brave'],
+        options: ['google', 'youtube', 'duckduckgo', 'bing', 'brave', 'wikipedia'],
         description: 'Search using a search engine',
         displayName: 'Web Search'
     },
@@ -97,6 +107,11 @@ const COMMAND_TYPES = {
         type: 'none',
         description: 'Reload the current page',
         displayName: 'Refresh Page'
+    },
+    'poly': {
+        type: 'poly',
+        description: 'Execute multiple commands in sequence',
+        displayName: 'Poly Command'
     }
 };
 
@@ -387,21 +402,44 @@ class OptionsManager {
             // Create dropdown menu
             actionDropdown = document.createElement('div');
             actionDropdown.className = 'action-dropdown';
-            actionDropdown.style.position = 'absolute';
-            actionDropdown.style.top = '100%';
-            actionDropdown.style.left = '0';
-            actionDropdown.style.right = '0';
-            actionDropdown.style.marginTop = '4px';
+            actionDropdown.style.position = 'fixed';
+            actionDropdown.style.zIndex = '10000';
+            
+            // Calculate position based on button's position
+            const buttonRect = actionButton.getBoundingClientRect();
+            actionDropdown.style.top = `${buttonRect.bottom + 4}px`;
+            actionDropdown.style.left = `${buttonRect.left}px`;
+            actionDropdown.style.width = `${buttonRect.width}px`;
+            
+            actionDropdown.style.backgroundColor = '#9C6CE9';
+            actionDropdown.style.border = '1px solid #8A5CD8';
+            actionDropdown.style.borderRadius = '4px';
+            actionDropdown.style.maxHeight = '300px';
+            actionDropdown.style.overflowY = 'auto';
+            actionDropdown.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
             
             // Add options to dropdown
             Object.entries(COMMAND_TYPES).forEach(([type, config]) => {
                 const option = document.createElement('div');
                 option.className = 'action-option';
                 option.textContent = config.displayName || type;
+                option.style.padding = '8px 12px';
+                option.style.cursor = 'pointer';
+                option.style.color = 'white';
                 
                 if (type === command.action) {
-                    option.style.background = 'rgba(255, 255, 255, 0.1)';
+                    option.style.backgroundColor = '#8A5CD8';
                 }
+                
+                option.onmouseover = () => {
+                    option.style.backgroundColor = '#8A5CD8';
+                };
+                
+                option.onmouseout = () => {
+                    if (action !== command.action) {
+                        option.style.backgroundColor = '';
+                    }
+                };
                 
                 option.onclick = () => {
                     // Update action button text
@@ -453,8 +491,28 @@ class OptionsManager {
         
         // Delete button
         const deleteBtn = document.createElement('button');
-        deleteBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 13L13 3M3 3L13 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
-        deleteBtn.className = 'delete-command';
+        deleteBtn.innerHTML = '&times;';
+        deleteBtn.title = 'Delete Command';
+        deleteBtn.style.backgroundColor = 'transparent';
+        deleteBtn.style.color = '#888';
+        deleteBtn.style.border = 'none';
+        deleteBtn.style.borderRadius = '4px';
+        deleteBtn.style.fontSize = '20px';
+        deleteBtn.style.cursor = 'pointer';
+        deleteBtn.style.padding = '0 8px';
+        deleteBtn.style.paddingLeft = '20px';
+        deleteBtn.style.marginRight = '-10px';
+        deleteBtn.style.lineHeight = '1';
+        deleteBtn.style.transition = 'color 0.2s ease';
+        
+        deleteBtn.onmouseover = () => {
+            deleteBtn.style.color = '#d9534f';
+        };
+        
+        deleteBtn.onmouseout = () => {
+            deleteBtn.style.color = '#888';
+        };
+        
         deleteBtn.onclick = () => {
             div.remove();
             this.saveCommands();
@@ -498,12 +556,690 @@ class OptionsManager {
         
         let input;
 
-        if (config.type === 'select') {
+        if (config.type === 'poly') {
+            // For poly command type, create a button that opens a modal
+            const wrapper = document.createElement('div');
+            wrapper.className = 'poly-wrapper';
+            wrapper.style.width = '100%';
+            
+            const polyButton = document.createElement('button');
+            polyButton.className = 'action-value poly-button';
+            polyButton.textContent = 'Configure Commands';
+            polyButton.style.cursor = 'pointer';
+            
+            // Parse existing commands or initialize empty array
+            let polyCommands = [];
+            try {
+                if (value && typeof value === 'string') {
+                    polyCommands = JSON.parse(value);
+                }
+            } catch (e) {
+                console.error('Error parsing poly commands:', e);
+                polyCommands = [];
+            }
+            
+            if (!Array.isArray(polyCommands)) {
+                polyCommands = [];
+            }
+            
+            // Store commands in the wrapper's dataset
+            wrapper.dataset.value = JSON.stringify(polyCommands);
+            
+            polyButton.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Create modal overlay
+                const overlay = document.createElement('div');
+                overlay.className = 'modal-overlay';
+                overlay.style.position = 'fixed';
+                overlay.style.top = '0';
+                overlay.style.left = '0';
+                overlay.style.right = '0';
+                overlay.style.bottom = '0';
+                overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+                overlay.style.display = 'flex';
+                overlay.style.justifyContent = 'center';
+                overlay.style.alignItems = 'center';
+                overlay.style.zIndex = '9999';
+                
+                // Create modal
+                const modal = document.createElement('div');
+                modal.className = 'poly-modal';
+                modal.style.backgroundColor = '#2a2a2a';
+                modal.style.borderRadius = '8px';
+                modal.style.padding = '20px';
+                modal.style.width = '600px';
+                modal.style.maxWidth = '90%';
+                modal.style.maxHeight = '80vh';
+                modal.style.overflowY = 'auto';
+                modal.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+                
+                // Modal header
+                const header = document.createElement('div');
+                header.style.display = 'flex';
+                header.style.justifyContent = 'space-between';
+                header.style.alignItems = 'center';
+                header.style.marginBottom = '20px';
+                
+                const title = document.createElement('div');
+                title.textContent = '// configure';
+                title.style.margin = '0';
+                title.style.fontSize = '16px';
+                title.style.fontWeight = '500';
+                title.style.color = 'white';
+                title.style.fontFamily = 'monospace';
+                
+                const closeButton = document.createElement('button');
+                closeButton.innerHTML = '&times;';
+                closeButton.style.background = 'none';
+                closeButton.style.border = 'none';
+                closeButton.style.fontSize = '24px';
+                closeButton.style.cursor = 'pointer';
+                closeButton.style.color = '#fff';
+                
+                closeButton.onclick = () => {
+                    // Save before closing
+                    savePolyConfiguration();
+                    document.body.removeChild(overlay);
+                };
+                
+                // Function to save the poly configuration
+                const savePolyConfiguration = () => {
+                    wrapper.dataset.value = JSON.stringify(polyCommands);
+                    
+                    // Update the button text to show number of commands
+                    polyButton.textContent = polyCommands.length > 0 
+                        ? `${polyCommands.length} Command${polyCommands.length !== 1 ? 's' : ''} Configured`
+                        : 'Configure Commands';
+                    
+                    // Save commands
+                    this.saveCommands();
+                };
+                
+                header.appendChild(title);
+                header.appendChild(closeButton);
+                
+                // Command list container
+                const commandListContainer = document.createElement('div');
+                commandListContainer.className = 'poly-command-list';
+                commandListContainer.style.marginBottom = '20px';
+                
+                // Function to render the command list
+                const renderCommandList = () => {
+                    commandListContainer.innerHTML = '';
+                    
+                    if (polyCommands.length === 0) {
+                        const emptyState = document.createElement('div');
+                        emptyState.style.textAlign = 'center';
+                        emptyState.style.padding = '20px';
+                        emptyState.style.color = '#888';
+                        emptyState.textContent = 'No commands added yet. Click "Add Command" below to get started.';
+                        commandListContainer.appendChild(emptyState);
+                        return;
+                    }
+                    
+                    // Create sortable list
+                    const sortableList = document.createElement('div');
+                    sortableList.className = 'sortable-list';
+                    sortableList.style.display = 'flex';
+                    sortableList.style.flexDirection = 'column';
+                    sortableList.style.gap = '8px';
+                    
+                    polyCommands.forEach((cmd, index) => {
+                        // Create command item similar to the command creation in options
+                        const cmdItem = document.createElement('div');
+                        cmdItem.className = 'poly-command-item';
+                        cmdItem.style.display = 'flex';
+                        cmdItem.style.alignItems = 'center';
+                        cmdItem.style.gap = '8px';
+                        cmdItem.style.padding = '10px';
+                        cmdItem.style.backgroundColor = '#3a3a3a';
+                        cmdItem.style.borderRadius = '4px';
+                        cmdItem.style.cursor = 'grab';
+                        cmdItem.style.width = '100%';
+                        cmdItem.style.boxSizing = 'border-box';
+                        cmdItem.draggable = true;
+                        cmdItem.dataset.index = index;
+                        
+                        // Handle drag events
+                        cmdItem.addEventListener('dragstart', (e) => {
+                            e.dataTransfer.setData('text/plain', index);
+                            cmdItem.style.opacity = '0.5';
+                            setTimeout(() => {
+                                cmdItem.classList.add('dragging');
+                            }, 0);
+                        });
+                        
+                        cmdItem.addEventListener('dragend', () => {
+                            cmdItem.style.opacity = '1';
+                            cmdItem.classList.remove('dragging');
+                            
+                            // Save after drag operation
+                            wrapper.dataset.value = JSON.stringify(polyCommands);
+                            this.saveCommands();
+                        });
+                        
+                        // Drag handle
+                        const dragHandle = document.createElement('div');
+                        dragHandle.className = 'drag-handle';
+                        dragHandle.innerHTML = `
+                            <svg width="12" height="20" viewBox="0 0 12 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="3" cy="3" r="2" fill="#888888"/>
+                                <circle cx="9" cy="3" r="2" fill="#888888"/>
+                                <circle cx="3" cy="10" r="2" fill="#888888"/>
+                                <circle cx="9" cy="10" r="2" fill="#888888"/>
+                                <circle cx="3" cy="17" r="2" fill="#888888"/>
+                                <circle cx="9" cy="17" r="2" fill="#888888"/>
+                            </svg>
+                        `;
+                        dragHandle.style.cursor = 'grab';
+                        dragHandle.style.color = '#888';
+                        dragHandle.style.marginRight = '4px';
+                        dragHandle.style.display = 'flex';
+                        dragHandle.style.alignItems = 'center';
+                        
+                        // Action dropdown
+                        const actionDropdown = document.createElement('div');
+                        actionDropdown.className = 'action-dropdown-wrapper';
+                        actionDropdown.style.position = 'relative';
+                        actionDropdown.style.width = '200px';
+                        actionDropdown.style.flexShrink = '0';
+                        actionDropdown.style.flexBasis = '200px';
+                        actionDropdown.style.maxWidth = '200px';
+                        
+                        const actionButton = document.createElement('button');
+                        actionButton.className = 'action-dropdown-button';
+                        actionButton.style.display = 'flex';
+                        actionButton.style.justifyContent = 'space-between';
+                        actionButton.style.alignItems = 'center';
+                        actionButton.style.width = '100%';
+                        actionButton.style.padding = '6px 10px';
+                        actionButton.style.height = '36px';
+                        actionButton.style.boxSizing = 'border-box';
+                        actionButton.style.backgroundColor = '#9C6CE9';
+                        actionButton.style.border = '1px solid #8A5CD8';
+                        actionButton.style.borderRadius = '4px';
+                        actionButton.style.color = 'white';
+                        actionButton.style.cursor = 'pointer';
+                        actionButton.style.textAlign = 'left';
+                        
+                        actionButton.innerHTML = `
+                            <span>${COMMAND_TYPES[cmd.action]?.displayName || cmd.action}</span>
+                            <span class="dropdown-arrow" style="margin-left: 15px;">
+                                <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M1 1L5 5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </span>
+                        `;
+                        
+                        let actionDropdownMenu = null;
+                        
+                        actionButton.onclick = (e) => {
+                            e.stopPropagation();
+                            
+                            if (actionDropdownMenu) {
+                                actionDropdownMenu.remove();
+                                actionDropdownMenu = null;
+                                return;
+                            }
+                            
+                            // Create dropdown menu
+                            actionDropdownMenu = document.createElement('div');
+                            actionDropdownMenu.className = 'action-dropdown-menu';
+                            actionDropdownMenu.style.position = 'fixed';
+                            actionDropdownMenu.style.zIndex = '10000';
+                            
+                            // Calculate position based on button's position
+                            const buttonRect = actionButton.getBoundingClientRect();
+                            actionDropdownMenu.style.top = `${buttonRect.bottom + 4}px`;
+                            actionDropdownMenu.style.left = `${buttonRect.left}px`;
+                            actionDropdownMenu.style.width = `${buttonRect.width}px`;
+                            
+                            actionDropdownMenu.style.backgroundColor = '#9C6CE9';
+                            actionDropdownMenu.style.border = '1px solid #8A5CD8';
+                            actionDropdownMenu.style.borderRadius = '4px';
+                            actionDropdownMenu.style.maxHeight = '300px';
+                            actionDropdownMenu.style.overflowY = 'auto';
+                            actionDropdownMenu.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+                            
+                            // Add options
+                            Object.entries(COMMAND_TYPES).forEach(([action, config]) => {
+                                if (action !== 'poly') { // Avoid recursion
+                                    const option = document.createElement('div');
+                                    option.className = 'action-option';
+                                    option.textContent = config.displayName || action;
+                                    option.style.padding = '8px 12px';
+                                    option.style.cursor = 'pointer';
+                                    option.style.color = 'white';
+                                    
+                                    if (action === cmd.action) {
+                                        option.style.backgroundColor = '#8A5CD8';
+                                    }
+                                    
+                                    option.onmouseover = () => {
+                                        option.style.backgroundColor = '#8A5CD8';
+                                    };
+                                    
+                                    option.onmouseout = () => {
+                                        if (action !== cmd.action) {
+                                            option.style.backgroundColor = '';
+                                        }
+                                    };
+                                    
+                                    option.onclick = () => {
+                                        const oldAction = cmd.action;
+                                        cmd.action = action;
+                                        
+                                        // Update button text
+                                        actionButton.innerHTML = `
+                                            <span>${config.displayName || action}</span>
+                                            <span class="dropdown-arrow" style="margin-left: 15px;">
+                                                <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M1 1L5 5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                                </svg>
+                                            </span>
+                                        `;
+                                        
+                                        // If action type changed, update the args input
+                                        if (oldAction !== action) {
+                                            // Reset args if action type changed
+                                            cmd.args = [];
+                                            
+                                            // Re-render the command list to update the args input
+                                            renderCommandList();
+                                        }
+                                        
+                                        // Auto-save
+                                        wrapper.dataset.value = JSON.stringify(polyCommands);
+                                        this.saveCommands();
+                                        
+                                        // Close dropdown
+                                        actionDropdownMenu.remove();
+                                        actionDropdownMenu = null;
+                                    };
+                                    
+                                    actionDropdownMenu.appendChild(option);
+                                }
+                            });
+                            
+                            actionDropdown.appendChild(actionDropdownMenu);
+                            
+                            // Close dropdown when clicking outside
+                            const closeActionDropdown = (e) => {
+                                if (!actionDropdownMenu.contains(e.target) && !actionButton.contains(e.target)) {
+                                    actionDropdownMenu.remove();
+                                    actionDropdownMenu = null;
+                                    document.removeEventListener('click', closeActionDropdown);
+                                }
+                            };
+                            
+                            document.addEventListener('click', closeActionDropdown);
+                        };
+                        
+                        actionDropdown.appendChild(actionButton);
+                        
+                        // Args input based on action type
+                        const argsContainer = document.createElement('div');
+                        argsContainer.className = 'args-container';
+                        argsContainer.style.flex = '1';
+                        argsContainer.style.width = 'calc(100% - 200px - 40px)';
+                        argsContainer.style.marginLeft = '10px';
+                        argsContainer.style.height = '36px';
+                        argsContainer.style.boxSizing = 'border-box';
+                        argsContainer.style.display = 'flex';
+                        argsContainer.style.alignItems = 'center';
+                        
+                        const actionConfig = COMMAND_TYPES[cmd.action];
+                        
+                        if (actionConfig) {
+                            if (actionConfig.type === 'none') {
+                                const noArgsMsg = document.createElement('span');
+                                noArgsMsg.textContent = 'No parameters needed';
+                                noArgsMsg.style.color = '#aaa';
+                                noArgsMsg.style.fontStyle = 'italic';
+                                noArgsMsg.style.height = '36px';
+                                noArgsMsg.style.display = 'flex';
+                                noArgsMsg.style.alignItems = 'center';
+                                noArgsMsg.style.padding = '6px 10px';
+                                noArgsMsg.style.boxSizing = 'border-box';
+                                argsContainer.appendChild(noArgsMsg);
+                            } else if (actionConfig.type === 'select') {
+                                // Create select dropdown
+                                const selectWrapper = document.createElement('div');
+                                selectWrapper.className = 'select-wrapper';
+                                selectWrapper.style.position = 'relative';
+                                selectWrapper.style.width = '100%';
+                                selectWrapper.style.height = '36px';
+                                selectWrapper.style.boxSizing = 'border-box';
+                                
+                                const selectButton = document.createElement('button');
+                                selectButton.className = 'select-button';
+                                selectButton.style.display = 'flex';
+                                selectButton.style.justifyContent = 'space-between';
+                                selectButton.style.alignItems = 'center';
+                                selectButton.style.width = '100%';
+                                selectButton.style.height = '36px';
+                                selectButton.style.padding = '6px 10px';
+                                selectButton.style.boxSizing = 'border-box';
+                                selectButton.style.backgroundColor = '#9C6CE9';
+                                selectButton.style.border = '1px solid #8A5CD8';
+                                selectButton.style.borderRadius = '4px';
+                                selectButton.style.color = 'white';
+                                selectButton.style.cursor = 'pointer';
+                                selectButton.style.textAlign = 'left';
+                                
+                                // Default selected option
+                                const selectedOption = cmd.args && cmd.args[0] ? cmd.args[0] : actionConfig.options[0];
+                                
+                                selectButton.innerHTML = `
+                                    <span>${selectedOption}</span>
+                                    <span class="dropdown-arrow" style="margin-left: 15px;">
+                                        <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M1 1L5 5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                    </span>
+                                `;
+                                
+                                let selectDropdownMenu = null;
+                                
+                                selectButton.onclick = (e) => {
+                                    e.stopPropagation();
+                                    
+                                    if (selectDropdownMenu) {
+                                        selectDropdownMenu.remove();
+                                        selectDropdownMenu = null;
+                                        return;
+                                    }
+                                    
+                                    // Create dropdown menu
+                                    selectDropdownMenu = document.createElement('div');
+                                    selectDropdownMenu.className = 'select-dropdown-menu';
+                                    selectDropdownMenu.style.position = 'fixed';
+                                    selectDropdownMenu.style.zIndex = '10000';
+                                    
+                                    // Calculate position based on button's position
+                                    const buttonRect = selectButton.getBoundingClientRect();
+                                    selectDropdownMenu.style.top = `${buttonRect.bottom + 4}px`;
+                                    selectDropdownMenu.style.left = `${buttonRect.left}px`;
+                                    selectDropdownMenu.style.width = `${buttonRect.width}px`;
+                                    
+                                    selectDropdownMenu.style.backgroundColor = '#9C6CE9';
+                                    selectDropdownMenu.style.border = '1px solid #8A5CD8';
+                                    selectDropdownMenu.style.borderRadius = '4px';
+                                    selectDropdownMenu.style.maxHeight = '300px';
+                                    selectDropdownMenu.style.overflowY = 'auto';
+                                    selectDropdownMenu.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+                                    
+                                    // Add options
+                                    actionConfig.options.forEach(option => {
+                                        const optionEl = document.createElement('div');
+                                        optionEl.className = 'select-option';
+                                        optionEl.textContent = option;
+                                        optionEl.style.padding = '8px 12px';
+                                        optionEl.style.cursor = 'pointer';
+                                        optionEl.style.color = 'white';
+                                        
+                                        if (option === selectedOption) {
+                                            optionEl.style.backgroundColor = '#8A5CD8';
+                                        }
+                                        
+                                        optionEl.onmouseover = () => {
+                                            optionEl.style.backgroundColor = '#8A5CD8';
+                                        };
+                                        
+                                        optionEl.onmouseout = () => {
+                                            if (option !== selectedOption) {
+                                                optionEl.style.backgroundColor = '';
+                                            }
+                                        };
+                                        
+                                        optionEl.onclick = () => {
+                                            // Update command args
+                                            cmd.args = [option];
+                                            
+                                            // Update button text
+                                            selectButton.innerHTML = `
+                                                <span>${option}</span>
+                                                <span class="dropdown-arrow" style="margin-left: 15px;">
+                                                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                        <path d="M1 1L5 5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                                    </svg>
+                                                </span>
+                                            `;
+                                            
+                                            // Auto-save
+                                            wrapper.dataset.value = JSON.stringify(polyCommands);
+                                            this.saveCommands();
+                                            
+                                            // Close dropdown
+                                            selectDropdownMenu.remove();
+                                            selectDropdownMenu = null;
+                                        };
+                                        
+                                        selectDropdownMenu.appendChild(optionEl);
+                                    });
+                                    
+                                    selectWrapper.appendChild(selectDropdownMenu);
+                                    
+                                    // Close dropdown when clicking outside
+                                    const closeSelectDropdown = (e) => {
+                                        if (!selectDropdownMenu.contains(e.target) && !selectButton.contains(e.target)) {
+                                            selectDropdownMenu.remove();
+                                            selectDropdownMenu = null;
+                                            document.removeEventListener('click', closeSelectDropdown);
+                                        }
+                                    };
+                                    
+                                    document.addEventListener('click', closeSelectDropdown);
+                                };
+                                
+                                selectWrapper.appendChild(selectButton);
+                                argsContainer.appendChild(selectWrapper);
+                            } else {
+                                // Text input for URL or text
+                                const textArg = document.createElement('input');
+                                textArg.type = 'text';
+                                textArg.className = 'arg-input';
+                                textArg.placeholder = actionConfig.placeholder || 'Enter argument';
+                                textArg.style.width = '100%';
+                                textArg.style.padding = '6px 10px';
+                                textArg.style.height = '36px';
+                                textArg.style.boxSizing = 'border-box';
+                                textArg.style.backgroundColor = '#444';
+                                textArg.style.border = 'none';
+                                textArg.style.borderRadius = '4px';
+                                textArg.style.color = 'white';
+                                
+                                // Set current value if exists
+                                if (cmd.args && cmd.args[0]) {
+                                    textArg.value = cmd.args[0];
+                                }
+                                
+                                // Save on change
+                                textArg.onchange = () => {
+                                    cmd.args = [textArg.value];
+                                    
+                                    // Auto-save
+                                    wrapper.dataset.value = JSON.stringify(polyCommands);
+                                    this.saveCommands();
+                                };
+                                
+                                argsContainer.appendChild(textArg);
+                            }
+                        }
+                        
+                        // Delete button
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.innerHTML = '&times;';
+                        deleteBtn.title = 'Delete Command';
+                        deleteBtn.style.backgroundColor = 'transparent';
+                        deleteBtn.style.color = '#888';
+                        deleteBtn.style.border = 'none';
+                        deleteBtn.style.borderRadius = '4px';
+                        deleteBtn.style.fontSize = '20px';
+                        deleteBtn.style.cursor = 'pointer';
+                        deleteBtn.style.padding = '0 8px';
+                        deleteBtn.style.paddingLeft = '20px';
+                        deleteBtn.style.marginRight = '-10px';
+                        deleteBtn.style.lineHeight = '1';
+                        deleteBtn.style.transition = 'color 0.2s ease';
+                        
+                        deleteBtn.onmouseover = () => {
+                            deleteBtn.style.color = '#d9534f';
+                        };
+                        
+                        deleteBtn.onmouseout = () => {
+                            deleteBtn.style.color = '#888';
+                        };
+                        
+                        deleteBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            polyCommands.splice(index, 1);
+                            renderCommandList();
+                            
+                            // Auto-save when removing a command
+                            wrapper.dataset.value = JSON.stringify(polyCommands);
+                            this.saveCommands();
+                        };
+                        
+                        // Assemble command item
+                        cmdItem.appendChild(dragHandle);
+                        cmdItem.appendChild(actionDropdown);
+                        cmdItem.appendChild(argsContainer);
+                        cmdItem.appendChild(deleteBtn);
+                        
+                        sortableList.appendChild(cmdItem);
+                    });
+                    
+                    // Add drag and drop event listeners to the sortable list
+                    sortableList.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        const draggingItem = sortableList.querySelector('.dragging');
+                        if (!draggingItem) return;
+                        
+                        // Find the item we're dragging over
+                        const siblings = [...sortableList.querySelectorAll('.poly-command-item:not(.dragging)')];
+                        const nextSibling = siblings.find(sibling => {
+                            const box = sibling.getBoundingClientRect();
+                            const offset = e.clientY - box.top - box.height / 2;
+                            return offset < 0;
+                        });
+                        
+                        if (nextSibling) {
+                            sortableList.insertBefore(draggingItem, nextSibling);
+                        } else {
+                            sortableList.appendChild(draggingItem);
+                        }
+                    });
+                    
+                    sortableList.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        
+                        // Reorder the commands array based on the new DOM order
+                        const newOrder = [];
+                        sortableList.querySelectorAll('.poly-command-item').forEach(item => {
+                            const index = parseInt(item.dataset.index);
+                            if (!isNaN(index) && index >= 0 && index < polyCommands.length) {
+                                newOrder.push(polyCommands[index]);
+                            }
+                        });
+                        
+                        if (newOrder.length === polyCommands.length) {
+                            polyCommands = newOrder;
+                            
+                            // Update the indices
+                            sortableList.querySelectorAll('.poly-command-item').forEach((item, idx) => {
+                                item.dataset.index = idx;
+                            });
+                            
+                            // Auto-save after reordering
+                            wrapper.dataset.value = JSON.stringify(polyCommands);
+                            this.saveCommands();
+                        }
+                    });
+                    
+                    commandListContainer.appendChild(sortableList);
+                };
+                
+                // Add command button
+                const addButton = document.createElement('button');
+                addButton.textContent = 'Add Command';
+                addButton.style.backgroundColor = '#9C6CE9';
+                addButton.style.color = 'white';
+                addButton.style.padding = '8px 16px';
+                addButton.style.border = 'none';
+                addButton.style.borderRadius = '4px';
+                addButton.style.cursor = 'pointer';
+                addButton.style.width = '100%';
+                addButton.style.marginTop = '10px';
+                addButton.style.textAlign = 'center';
+                
+                addButton.onclick = () => {
+                    // Add a new command with default values
+                    const defaultAction = Object.keys(COMMAND_TYPES).find(key => key !== 'poly');
+                    polyCommands.push({
+                        action: defaultAction,
+                        args: []
+                    });
+                    
+                    // Render the updated list
+                    renderCommandList();
+                    
+                    // Auto-save
+                    wrapper.dataset.value = JSON.stringify(polyCommands);
+                    this.saveCommands();
+                };
+                
+                // Buttons container
+                const buttonsContainer = document.createElement('div');
+                buttonsContainer.style.display = 'flex';
+                buttonsContainer.style.width = '100%';
+                
+                buttonsContainer.appendChild(addButton);
+                
+                // Assemble modal
+                modal.appendChild(header);
+                modal.appendChild(commandListContainer);
+                modal.appendChild(buttonsContainer);
+                
+                // Render initial command list
+                renderCommandList();
+                
+                // Add modal to overlay
+                overlay.appendChild(modal);
+                
+                // Add overlay to body
+                document.body.appendChild(overlay);
+                
+                // Close modal when clicking outside
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) {
+                        savePolyConfiguration();
+                        document.body.removeChild(overlay);
+                    }
+                });
+            };
+            
+            // Set initial button text
+            if (polyCommands.length > 0) {
+                polyButton.textContent = `${polyCommands.length} Command${polyCommands.length !== 1 ? 's' : ''} Configured`;
+            }
+            
+            wrapper.appendChild(polyButton);
+            
+            // Add a method to get the value
+            wrapper.getValue = () => wrapper.dataset.value;
+            
+            input = wrapper;
+        } else if (config.type === 'select') {
             // For select types, create a custom dropdown that looks like the action button
             const wrapper = document.createElement('div');
             wrapper.className = 'select-wrapper';
             wrapper.style.position = 'relative';
             wrapper.style.width = '100%';
+            wrapper.style.height = '36px';
+            wrapper.style.boxSizing = 'border-box';
             
             const selectButton = document.createElement('button');
             selectButton.className = 'action-value';
@@ -511,6 +1247,13 @@ class OptionsManager {
             selectButton.style.justifyContent = 'space-between';
             selectButton.style.alignItems = 'center';
             selectButton.style.width = '100%';
+            selectButton.style.height = '36px';
+            selectButton.style.padding = '6px 10px';
+            selectButton.style.boxSizing = 'border-box';
+            selectButton.style.backgroundColor = '#9C6CE9';
+            selectButton.style.border = '1px solid #8A5CD8';
+            selectButton.style.borderRadius = '4px';
+            selectButton.style.color = 'white';
             selectButton.style.textAlign = 'left';
             selectButton.style.cursor = 'pointer';
             
@@ -519,9 +1262,9 @@ class OptionsManager {
             
             selectButton.innerHTML = `
                 <span>${selectedOption}</span>
-                <span class="dropdown">
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                        <path d="M3 5L6 8L9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <span class="dropdown-arrow" style="margin-left: 15px;">
+                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M1 1L5 5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </span>
             `;
@@ -545,29 +1288,49 @@ class OptionsManager {
                 // Create dropdown menu
                 selectDropdown = document.createElement('div');
                 selectDropdown.className = 'select-dropdown';
-                selectDropdown.style.position = 'absolute';
-                selectDropdown.style.top = '100%';
-                selectDropdown.style.left = '0';
-                selectDropdown.style.right = '0';
-                selectDropdown.style.marginTop = '4px';
+                selectDropdown.style.position = 'fixed';
+                selectDropdown.style.zIndex = '10000';
+                
+                // Calculate position based on button's position
+                const buttonRect = selectButton.getBoundingClientRect();
+                selectDropdown.style.top = `${buttonRect.bottom + 4}px`;
+                selectDropdown.style.left = `${buttonRect.left}px`;
+                selectDropdown.style.width = `${buttonRect.width}px`;
+                
+                selectDropdown.style.backgroundColor = '#9C6CE9';
+                selectDropdown.style.border = '1px solid #8A5CD8';
+                selectDropdown.style.borderRadius = '4px';
+                selectDropdown.style.maxHeight = '300px';
+                selectDropdown.style.overflowY = 'auto';
+                selectDropdown.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
                 
                 // Add options to dropdown
-            config.options.forEach(option => {
+                config.options.forEach(option => {
                     const optionElement = document.createElement('div');
                     optionElement.className = 'select-option';
                     optionElement.textContent = option;
                     
                     if (option === selectedOption) {
-                        optionElement.style.background = 'rgba(255, 255, 255, 0.1)';
+                        optionElement.style.backgroundColor = '#8A5CD8';
                     }
+                    
+                    optionElement.onmouseover = () => {
+                        optionElement.style.backgroundColor = '#8A5CD8';
+                    };
+                    
+                    optionElement.onmouseout = () => {
+                        if (option !== selectedOption) {
+                            optionElement.style.backgroundColor = '';
+                        }
+                    };
                     
                     optionElement.onclick = () => {
                         // Update button text
                         selectButton.innerHTML = `
                             <span>${option}</span>
-                            <span class="dropdown">
-                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                                    <path d="M3 5L6 8L9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <span class="dropdown-arrow" style="margin-left: 15px;">
+                                <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M1 1L5 5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                                 </svg>
                             </span>
                         `;
@@ -614,18 +1377,41 @@ class OptionsManager {
             input.className = 'action-value';
             input.placeholder = config.placeholder;
             input.value = value || '';
+            input.style.width = '100%';
+            input.style.height = '36px';
+            input.style.padding = '6px 10px';
+            input.style.boxSizing = 'border-box';
+            input.style.backgroundColor = '#444';
+            input.style.border = 'none';
+            input.style.borderRadius = '4px';
+            input.style.color = 'white';
             
             // Add a method to get the value
             input.getValue = () => input.value;
-        } else {
+        } else if (config.type === 'none') {
             input = document.createElement('span');
             input.className = 'action-value no-input';
             input.textContent = 'No parameters needed';
             input.style.opacity = '0.5';
             input.style.fontStyle = 'italic';
+            input.style.height = '36px';
+            input.style.display = 'flex';
+            input.style.alignItems = 'center';
+            input.style.padding = '6px 10px';
+            input.style.boxSizing = 'border-box';
             
             // Add a method to get the value
             input.getValue = () => '';
+        } else {
+            console.error('Unknown command type:', config.type);
+            input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'command-value action-value';
+            input.placeholder = 'Value';
+            input.value = value || '';
+            
+            // Add a method to get the value
+            input.getValue = () => input.value;
         }
 
         input.onchange = () => this.saveCommands();

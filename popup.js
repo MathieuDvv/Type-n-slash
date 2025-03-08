@@ -99,35 +99,4 @@ async function updateCommandHistory(commandName) {
     } catch (error) {
         console.error('Error updating command history:', error);
     }
-}
-
-// Load and display commands
-async function loadCommands() {
-    const { commands } = await chrome.storage.sync.get(['commands']);
-    const commandList = document.getElementById('command-list');
-    
-    if (!commands || Object.keys(commands).length === 0) {
-        commandList.innerHTML = `
-            <div class="command-item">
-                <div class="command-description">No commands configured yet. Click "Open Settings" to add commands.</div>
-            </div>
-        `;
-        return;
-    }
-    
-    // Sort commands by name
-    const sortedCommands = Object.entries(commands)
-        .sort(([a], [b]) => a.localeCompare(b));
-    
-    // Create command list HTML
-    commandList.innerHTML = sortedCommands
-        .map(([name, command]) => `
-            <div class="command-item">
-                <div>
-                    <div class="command-name">${name}</div>
-                    <div class="command-description">${command.description || ''}</div>
-                </div>
-            </div>
-        `)
-        .join('');
 } 
